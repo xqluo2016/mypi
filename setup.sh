@@ -23,7 +23,7 @@ ENDL
 
 #############
 
-chmod +x /root/proxy
+chmod +x /bin/proxy
 
 cat >/etc/xinetd.d/proxy <<ENDL
 service proxy
