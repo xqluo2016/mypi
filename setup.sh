@@ -119,6 +119,8 @@ service smbd restart
 
 echo "=========INSTALL: cups for printer =================="
 apt-get install -y cups
+apt-get install -y hplip
+
 usermod -a -G lpadmin pi
 echo "CUPS admin will be available on port 631 publicly."
 
