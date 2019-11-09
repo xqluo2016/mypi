@@ -9,10 +9,56 @@ fi
 
 echo "=========INSTALL: xinetd for proxy service =========="
 apt-get install -y xinetd
+
+
+echo "=========Setup SSL Proxy Bridge ============="
+echo "*** Please enter your SSL proxy <ip:port>:"
+read PROXY
+if [ "$PROXY" != "" ]; then
+echo "creating /root/proxy.."
+cat >/bin/proxy <<ENDL
+#!/bin/bash
+/usr/bin/openssl s_client -connect $PROXY --quiet 2>/dev/null
+ENDL
+
+#############
+
+chmod +x /root/proxy
+
+cat >/etc/xinetd.d/proxy <<ENDL
+service proxy
+{
+	type		= unlisted
+	port		= 8888
+	socket_type	= stream
+	protocol	= tcp
+	wait		= no
+	disable		= no
+	user		= pi
+	only_from	= 0.0.0.0
+	server		= /bin/proxy
+}                                                                               
+ENDL
+
+/etc/init.d/xinetd restart
+netstat -anpl |grep 8888
+
+echo "Set system proxy local proxy"
+cat >>/etc/environment <<ENDL
+export http_proxy="http://127.0.0.1:8888"
+export https_proxy="http://127.0.0.1:8888"
+export no_proxy="localhost,127.0.0.1"
+ENDL
+. /etc/environment
+wget http://www.sample.com/
+else
+echo "skip proxy setting"
+fi
+
+
 echo "=========INSTALL: samba for file sharing ============"
 apt-get install -y samba samba-common-bin
-echo "=========INSTALL: cups for Printer =================="
-apt-get install -y cups
+
 echo "=========INSTALL: exfat support ====================="
 apt-get install -y exfat-fuse exfat-utils
 echo "=========INSTALL: ntfs support ======================"
@@ -25,7 +71,7 @@ ls -l /dev/disk/by-partuuid
 #############
 
 # echo "PARTUUID=$UUID  $DIR/$LABEL    auto    defaults,nofail,nobootwait 0       0" >> /etc/fstab
-echo >> /etc/samba/smb.conf <<ENDL
+cat >> /etc/samba/smb.conf <<ENDL
 [$LABEL]
 Comment = Pi shared folder
 Path = /$DIR/$LABEL
@@ -42,7 +88,10 @@ ENDL
 
 #############
 
-echo >> /etc/samba/smb.conf <<ENDL
+echo "=========INSTALL: cups for Printer =================="
+apt-get install -y cups
+
+cat >> /etc/samba/smb.conf <<ENDL
 # CUPS printing.  
 [printers]
 comment = All Printers
@@ -65,7 +114,7 @@ ENDL
 
 #############
 
-echo >/root/stopPrinting <<ENDL
+cat >/root/stopPrinting <<ENDL
 #!/bin/sh
 lpq -a
 lprm HP_Deskjet_1000_J110_series -
@@ -73,49 +122,6 @@ lpq -a
 ENDL
 
 #############
-
-echo "=========Setup SSL Proxy Bridge ============="
-echo "*** Please enter your SSL proxy host:port >"
-read PROXY
-if [ "$PROXY" != "" ]; then
-echo "creating /root/proxy.."
-echo >/root/proxy <<ENDL
-#!/bin/bash
-/usr/bin/openssl s_client -connect $PROXY --quiet 2>/dev/null
-ENDL
-
-#############
-
-chmod +x /root/proxy
-
-echo >/etc/xinetd.d/proxy <<ENDL
-service proxy
-{
-	type		= unlisted
-	port		= 8888
-	socket_type	= stream
-	protocol	= tcp
-	wait		= no
-	disable		= no
-	user		= pi
-	only_from	= 0.0.0.0
-	server		= /root/proxy
-}                                                                               
-ENDL
-
-/etc/init.d/xinetd restart
-
-echo "Set system proxy local proxy"
-echo >>/etc/environment <<ENDL
-export http_proxy="http://127.0.0.1:8888"
-export https_proxy="http://127.0.0.1:8888"
-export no_proxy="localhost,127.0.0.1"
-ENDL
-
-else
-echo "skip proxy setting"
-fi
-
 
 
 
