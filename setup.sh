@@ -84,7 +84,7 @@ DIR=/share
 
 for disk in $DISKS
 do
-UUID=$(blkid -s UUID -o value $disk)
+UUID=$(blkid -s PARTUUID -o value $disk)
 LABEL=$(blkid -s LABEL -o value $disk)
 LABEL=$(echo $LABEL|tr ' ' '_')
 mkdir -p $DIR/$LABEL
