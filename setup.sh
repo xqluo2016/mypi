@@ -14,7 +14,7 @@ apt-get install -y xinetd
 echo "=========Setup SSL Proxy Bridge ============="
 
 function set_sys_proxy(){  
-	echo "Set system proxy local proxy"
+	echo "Setting system proxy ..."
 	cat >>/etc/environment <<ENDL
 	export http_proxy="http://127.0.0.1:8888"
 	export https_proxy="http://127.0.0.1:8888"
@@ -27,7 +27,7 @@ function set_sys_proxy(){
 echo "*** Please enter your SSL proxy <ip:port>:"
 read PROXY
 if [ "$PROXY" != "" ]; then
-echo "creating /root/proxy.."
+echo "creating /bin/proxy ..."
 cat >/bin/proxy <<ENDL
 #!/bin/bash
 /usr/bin/openssl s_client -connect $PROXY --quiet 2>/dev/null
@@ -35,6 +35,7 @@ ENDL
 
 chmod +x /bin/proxy
 
+echo "creating /etc/xinetd.d/proxy ..."
 cat >/etc/xinetd.d/proxy <<ENDL
 service proxy
 {
@@ -50,6 +51,7 @@ service proxy
 }                                                                               
 ENDL
 
+echo "Restart xinetd ..."
 /etc/init.d/xinetd restart
 netstat -anpl |grep 8888
 
@@ -63,9 +65,6 @@ esac
 else
 echo "skip proxy setting"
 fi
-
-
-apt-get update --fix-missing
 
 echo "=========INSTALL: samba for file sharing ============"
 apt-get install -y samba samba-common-bin
@@ -112,15 +111,16 @@ ENDL
 fi
 
 done
-
 service smbd restart
 
 
 
-echo "=========INSTALL: cups for printer =================="
+echo "=========INSTALL: cups & hplip for printer =================="
+echo "installing ..."
 apt-get install -y cups
 apt-get install -y hplip
 
+echo "configuring ..."
 usermod -a -G lpadmin pi
 echo "CUPS admin will be available on port 631 publicly."
 
@@ -130,6 +130,7 @@ sed -i '/<\/Location>/i \
   Allow @local' /etc/cups/cupsd.conf
 fi
 
+echo "restarting cups ..."
 systemctl restart cups.service
 
 echo "********************************************************"
@@ -177,6 +178,8 @@ cat >/etc/init.d/stopPrinting <<ENDL
 /usr/bin/cancel
 exit 0
 ENDL
+
+service smbd restart
 
 #############
 echo "All Done"
