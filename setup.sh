@@ -69,6 +69,8 @@ fi
 echo "=========INSTALL: samba for file sharing ============"
 apt-get install -y samba samba-common-bin
 
+smbpasswd -a pi
+
 echo "=========INSTALL: exfat support ====================="
 apt-get install -y exfat-fuse exfat-utils
 
